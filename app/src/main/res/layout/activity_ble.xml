@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="true"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    tools:context="com.example.galier.ble.DeviceManage">
+
+    <include
+        android:id="@+id/toolbar_main"
+        layout="@layout/toolbar_layout" />
+
+    <!--<android.support.v7.widget.RecyclerView-->
+    <!--android:id="@+id/recycle_listView"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="match_parent"/>-->
+    <LinearLayout
+        android:id="@+id/ll_function"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/toolbar_main"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/sendData"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="sendData"
+            android:text="发送" />
+
+        <Button
+            android:id="@+id/updateOta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="更新OTA" />
+
+        <Button
+            android:id="@+id/readRssi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="读取RSSI" />
+
+        <Button
+            android:id="@+id/requestMtu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="请求MTU" />
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/sendEntityData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ll_function"
+        android:text="发送大数据"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/cancelEntity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ll_function"
+        android:layout_toEndOf="@+id/sendEntityData"
+        android:text="取消发送大数据"
+        android:visibility="gone" />
+
+
+    <Button
+        android:id="@+id/test"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ll_function"
+        android:layout_toEndOf="@+id/cancelEntity"
+        android:text="测试页面"
+        android:visibility="gone" />
+
+
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/mRefreshLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/toolbar_main">
+
+        <ListView
+            android:id="@+id/listView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:animationCache="false"
+            android:scrollingCache="false"
+            android:smoothScrollbar="true"
+            android:layout_below="@id/toolbar_main" />
+    </android.support.v4.widget.SwipeRefreshLayout>
+
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="40dp"
+        app:srcCompat="@drawable/icon_scan" />
+
+    <!--<FrameLayout-->
+    <!--android:layout_below="@id/toolbar_main"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="match_parent">-->
+
+    <!--<include layout="@layout/custom_drawerlayout" />-->
+
+    <!--</FrameLayout>-->
+
+</RelativeLayout>

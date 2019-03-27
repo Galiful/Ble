@@ -1,0 +1,9 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/menu_send"
+        android:title="发送测试"
+        app:showAsAction="never"/>
+    <item android:id="@+id/menu_refresh"
+        android:title="清理蓝牙缓存"
+        app:showAsAction="never"/>
+</menu>
