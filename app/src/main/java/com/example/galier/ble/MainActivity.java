@@ -115,7 +115,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-
         ibup.setOnTouchListener(this);
         ibdown.setOnTouchListener(this);
         ibleft.setOnTouchListener(this);
