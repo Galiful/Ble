@@ -93,11 +93,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tvAngle = (TextView) findViewById(R.id.tv_angle);
         tvSignal = (TextView) findViewById(R.id.textView_signal);
 
-//        ibup.setOnClickListener(this);
-//        ibdown.setOnClickListener(this);
-//        ibleft.setOnClickListener(this);
-//        ibright.setOnClickListener(this);
-
         ibreset.setOnClickListener(this);
         ibsignal.setOnClickListener(this);
         ibok.setOnClickListener(this);
@@ -108,8 +103,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public boolean onLongClick(View v) {
                 if (choiceComOption == 0) {
                     startActivity(new Intent(MainActivity.this, DeviceManage.class));
-                }else {
-                    showSnackBar(tvSignal,"开发中");
+                } else {
+                    showSnackBar(tvSignal, "开发中");
                 }
                 return false;
             }
@@ -258,12 +253,60 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (choiceComOption == 0) {
                     choiceComOption = 1;
                     tvSignal.setText("WIFI");
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            super.run();
+                            try {
+                                if (socketclient != null) {
+                                    socketclient.close();
+                                }
+                                socketclient = new Socket("10.151.232.250", 8989);
+                                handler.sendEmptyMessage(101);
+                            } catch (IOException e) {
+                                handler.sendEmptyMessage(102);
+                                showSnackBar(tvSignal, e.toString());
+                                e.printStackTrace();
+                            }
+                        }
+                    }.start();
+
                 } else if (choiceComOption == 1) {
                     choiceComOption = 2;
                     tvSignal.setText("4G");
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            super.run();
+                            try {
+                                if (socketclient != null) {
+                                    socketclient.close();
+                                }
+                                socketclient = new Socket("10.151.232.250", 8989);
+                                handler.sendEmptyMessage(101);
+                            } catch (IOException e) {
+                                handler.sendEmptyMessage(102);
+                                showSnackBar(tvSignal, e.toString());
+                                e.printStackTrace();
+                            }
+                        }
+                    }.start();
                 } else if (choiceComOption == 2) {
                     choiceComOption = 0;
                     tvSignal.setText("BT");
+                    if (DeviceManage.isConnect) {
+                        tvState.setText("已连接");
+                    } else {
+                        tvState.setText("未连接");
+                    }
+                    try {
+                        if (socketclient != null) {
+                            socketclient.close();
+                        }
+                    } catch (IOException e) {
+                        showSnackBar(tvSignal, e.toString());
+                        e.printStackTrace();
+                    }
                 }
                 break;
             default:
@@ -361,7 +404,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 4G
             if (choiceComOption == 2) {
 //                socketclient = new Socket("61.191.217.247", 8899);
-                socketclient = new Socket("10.151.232.250", 8989);
+//                socketclient = new Socket("10.151.232.250", 8989);
 //                String socketData = "YH CM 0 :" + userID + "|3|" + setSendCmd()
 //                        + " 0\\r\\n";
                 BufferedWriter writer = new BufferedWriter(
@@ -373,14 +416,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // WIFI
             else if (choiceComOption == 1) {
 //                socketclient = new Socket("192.168.0.104", 16);
-                socketclient = new Socket("10.151.232.250", 8989);
+//                socketclient = new Socket("10.151.232.250", 8989);
 //                String socketData = "YH CM 0 :" + userID + "|3|" + setSendCmd()
 //                        + " 0\\r\\n";
                 BufferedWriter writer = new BufferedWriter(
                         new OutputStreamWriter(socketclient.getOutputStream()));
                 writer.write(setSendCmd());
                 writer.flush();
-                socketclient.close();
+//                socketclient.close();
             }
             //BT
             else if (choiceComOption == 0) {
@@ -449,6 +492,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 ivCar.setPivotX(ivCar.getWidth() / 2);
                 ivCar.setPivotY(ivCar.getHeight() / 2);
                 ivCar.setRotation(angleVal / (485 / 45));
+            } else if (msg.what == 101) {
+                if (socketclient.isConnected()) {
+                    tvState.setText("已连接");
+                }
+            } else if (msg.what == 102) {
+                tvState.setText("未连接");
             }
         }
     };
