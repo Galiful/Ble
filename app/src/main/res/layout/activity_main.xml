@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:fab="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
@@ -18,7 +18,7 @@
         android:gravity="center"
         android:layout_alignParentRight="true"
         android:layout_marginBottom="80dp"
-        android:layout_toRightOf="@id/imageButton_up">
+        android:layout_toEndOf="@id/imageButton_up">
 
         <TextView
             android:id="@+id/tv_state"
@@ -37,9 +37,9 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:background="#00000000"
-            app:srcCompat="@drawable/icon_bluetooth"
             android:elevation="10dp"
-            android:visibility="gone"/>
+            android:src="@drawable/icon_bluetooth"
+            android:visibility="gone" />
         <TextView
             android:id="@+id/textView_signal"
             android:layout_width="40dp"
@@ -57,6 +57,48 @@
             android:layout_margin="7dp"
             android:background="@drawable/button_select_reset"
             android:visibility="gone"/>
+        <com.getbase.floatingactionbutton.FloatingActionsMenu
+            android:id="@+id/multiple_actions_right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            fab:fab_addButtonColorNormal="@color/white"
+            fab:fab_addButtonColorPressed="@color/white_pressed"
+            fab:fab_addButtonPlusIconColor="@color/half_black"
+            fab:fab_addButtonSize="mini"
+            fab:fab_addButtonStrokeVisible="false"
+            fab:fab_expandDirection="down"
+            android:visibility="gone">
+
+            <com.getbase.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_bluetooth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                fab:fab_colorNormal="@color/white"
+                fab:fab_colorPressed="@color/white_pressed"
+                fab:fab_icon="@drawable/icon_bluetooth2"
+                fab:fab_size="mini"/>
+
+            <com.getbase.floatingactionbutton.FloatingActionButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                fab:fab_colorNormal="@color/white"
+                fab:fab_colorPressed="@color/white_pressed"
+                fab:fab_icon="@drawable/icon_wifi"
+                fab:fab_size="mini" />
+
+            <com.getbase.floatingactionbutton.FloatingActionButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                fab:fab_colorNormal="@color/white"
+                fab:fab_colorPressed="@color/white_pressed"
+                fab:fab_icon="@drawable/icon_4g"
+                fab:fab_size="mini" />
+
+        </com.getbase.floatingactionbutton.FloatingActionsMenu>
 
     </LinearLayout>
 

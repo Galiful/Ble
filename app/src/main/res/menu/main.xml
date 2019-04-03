@@ -4,6 +4,6 @@
         android:title="发送测试"
         app:showAsAction="never"/>
     <item android:id="@+id/menu_refresh"
-        android:title="清理蓝牙缓存"
+        android:title="清理蓝牙缓存和历史"
         app:showAsAction="never"/>
 </menu>

@@ -2,6 +2,7 @@ package com.example.galier.ble;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,12 +10,12 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import cn.com.heaton.blelibrary.ble.BleDevice;
 
 /**
- *
  * Created by LiuLei on 2016/11/26.
  */
 
@@ -41,15 +42,16 @@ public class LeDeviceListAdapter extends BaseAdapter {
         }
     }
 
-    public void addDevices(List<BleDevice> devices){
-        for(BleDevice device : devices){
-            if(!mLeDevices.contains(device)){
+    public void addDevices(List<BleDevice> devices) {
+        for (BleDevice device : devices) {
+            if (!mLeDevices.contains(device)) {
                 mLeDevices.add(device);
             }
         }
     }
-    public void addAllDevice(List<BleDevice> devices){
-        for(BleDevice device : devices){
+
+    public void addAllDevice(List<BleDevice> devices) {
+        for (BleDevice device : devices) {
             mLeDevices.add(device);
         }
     }
@@ -92,26 +94,31 @@ public class LeDeviceListAdapter extends BaseAdapter {
         } else {
             viewHolder = (ViewHolder) view.getTag();
         }
-
         final BleDevice device = mLeDevices.get(i);
-        final String deviceName = device.getBleName();
+        String deviceName = device.getBleName();
         final String deviceRSSI = BluetoothDevice.EXTRA_RSSI;
-        if(device.isConnectting()){
+        if (device.isConnectting()) {
             viewHolder.deviceState.setText("正在连接中...");
-        }
-        else if(device.isConnected()){
+        } else if (device.isConnected()) {
             viewHolder.deviceState.setText("已连接");
-        }else {
+        } else {
             viewHolder.deviceState.setText("未连接");
         }
         if (deviceName != null && deviceName.length() > 0)
+        {
+            Log.e("devicesArray", Arrays.toString(MainActivity.devicesArray));
+//            viewHolder.deviceName.setText(deviceName);
+            for (String address : new MainActivity().devicesArray) {
+                if (device.getBleAddress().equals(address)) {
+                    deviceName = deviceName + " (isConnected)";
+                }
+            }
             viewHolder.deviceName.setText(deviceName);
-        else if (deviceRSSI != null && deviceRSSI.length() > 0)
+        } else if (deviceRSSI != null && deviceRSSI.length() > 0)
             viewHolder.deviceRSSI.setText(deviceRSSI);
         else
             viewHolder.deviceName.setText("unknown_device");
         viewHolder.deviceAddress.setText(device.getBleAddress());
-
         return view;
     }
 

@@ -2,7 +2,13 @@ package com.example.galier.ble;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
@@ -11,6 +17,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -27,7 +34,19 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+import cn.com.heaton.blelibrary.ble.Ble;
+import cn.com.heaton.blelibrary.ble.BleDevice;
+import cn.com.heaton.blelibrary.ble.L;
+import cn.com.heaton.blelibrary.ble.callback.BleConnectCallback;
+import cn.com.heaton.blelibrary.ble.callback.BleNotiftCallback;
+import cn.com.heaton.blelibrary.ble.callback.BleScanCallback;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, View.OnTouchListener {
     private ImageButton ibup, ibdown, ibleft, ibright, ibreset, ibsignal, ibok;
@@ -41,7 +60,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private String angleSpeed = "180";
     private String speed = "3";
-    private String sendFlag, angleFlag, sendCmd;
+    private String sendFlag = "0", angleFlag, sendCmd;
     private int angleVal = 0;
     private volatile boolean sendLongPress = false, angleLongPress = false;
     private final static String TAG = MainActivity.class.getSimpleName();
@@ -52,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     long downTime = 0;
     private Socket socketclient = null;
     private String userID = "M0";
+    public static String[] devicesArray;
 
 
     @Override
@@ -63,10 +83,163 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             getWindow().setStatusBarColor(Color.TRANSPARENT);
         }
         setContentView(R.layout.activity_main);
-
         initView();
+        if (choiceComOption == 0) {
+            reConnect();
+        }
     }
 
+    /**
+     * 增加自动重连
+     */
+    public void reConnect() {
+        SharedPreferences settings = getSharedPreferences("DeviceInfo", MODE_PRIVATE);
+        Set<String> set = new HashSet<String>();//HashSet会报set未初始化
+        set = settings.getStringSet("Device", set);
+        devicesArray = (String[]) set.toArray(new String[set.size()]);//Object[] deviceArray = set.toArray();同上
+//        devicesArray = devicesArray[0].split(",");
+//        String deviceAddress = devicesArray[0].split(",")[1];
+        Log.e(TAG, "DeviceInfo: " + Arrays.toString(devicesArray) + " set.size: " + set.size());
+        requestPermission();
+        if(set.size()!=0){
+            initBle();
+            checkBluetoothStatus();
+        }
+    }
+
+    //请求权限
+    public void requestPermission() {
+        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 100);
+            return;
+        }
+    }
+    private void initBle() {
+        DeviceManage.mBle = Ble.options()
+                .setLogBleExceptions(true)//设置是否输出打印蓝牙日志
+                .setThrowBleException(true)//设置是否抛出蓝牙异常
+                .setAutoConnect(false)//设置是否自动连接
+                .setConnectFailedRetryCount(3)
+                .setConnectTimeout(10 * 1000)//设置连接超时时长
+                .setScanPeriod(10 * 1000)//设置扫描时长
+                .setUuid_service(UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb"))//设置主服务的uuid
+                .setUuid_write_cha(UUID.fromString("0000ffe1-0000-1000-8000-00805f9b34fb"))//设置可写特征的uuid
+                .create(getApplicationContext());
+    }
+    //检查蓝牙是否支持及打开
+    public void checkBluetoothStatus() {
+        // 检查设备是否支持BLE4.0
+        if (!DeviceManage.mBle.isSupportBle(this)) {
+            Toast.makeText(getApplicationContext(), "ble_not_supported", Toast.LENGTH_SHORT).show();
+        }
+        if (!DeviceManage.mBle.isBleEnable()) {
+            //4、若未打开，则请求打开蓝牙
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, Ble.REQUEST_ENABLE_BT);
+        } else {
+            //5、若已打开，则进行扫描
+            DeviceManage.mBle.startScan(scanCallback);
+        }
+    }
+
+    /**
+     * 扫描的回调
+     */
+    public BleScanCallback<BleDevice> scanCallback = new BleScanCallback<BleDevice>() {
+        @Override
+        public void onLeScan(final BleDevice device, int rssi, byte[] scanRecord) {
+            synchronized (DeviceManage.mBle.getLocker()) {
+                Log.e(TAG, "device.scanBleAddress: " +device.getBleName() + "(" + device.getBleAddress() + ")");
+                for (String address : devicesArray) {
+                    if (device.getBleAddress().equals(address)) {
+                        DeviceManage.mBle.connect(address, connectCallback);
+                        DeviceManage.mBle.stopScan();//连接后即停止扫描
+//                        DeviceManage.mBle.write(device,"123".getBytes(),new DeviceManage().bleDeviceBleWriteCallback);
+                    }
+                }
+                Log.e("devicesArray", Arrays.toString(devicesArray));
+
+
+            }
+        }
+        @Override
+        public void onStop() {
+            super.onStop();
+            L.e(TAG, " scanStop");
+        }
+    };
+    /**
+     * 连接的回调
+     */
+    private BleConnectCallback<BleDevice> connectCallback = new BleConnectCallback<BleDevice>() {
+        @Override
+        public void onConnectionChanged(BleDevice device) {
+            Log.e(TAG, "onConnectionChanged: " + device.isConnected()+" "+device.getConnectionState() +" "+ Thread.currentThread().getName());
+            if (device.isConnected()) {
+                DeviceManage.isConnect = true;
+                DeviceManage.mBle.startNotify(device, bleNotiftCallback);
+                Toast.makeText(getApplicationContext(), "已连接:" + device.getBleName() + "(" + device.getBleAddress() + ")", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        @Override
+        public void onConnectException(BleDevice device, int errorCode) {
+            super.onConnectException(device, errorCode);
+            DeviceManage.isConnect = false;
+            tvState.setText("未连接");
+            String introduce="其他原因";
+            if (errorCode == 2523) {
+                introduce = "Mcu连接断开或者是信号弱等原因断开";
+            } else if (errorCode == 2521) {
+                introduce = "连接失败";
+            } else if (errorCode == 2522) {
+                introduce = "状态异常";
+            } else if (errorCode == 2510) {
+                introduce = "连接超时";
+            }
+            showSnackBar(ivCar, "连接异常:" + "("+introduce+")");
+        }
+
+        @Override
+        public void onConnectTimeOut(BleDevice device) {
+            super.onConnectTimeOut(device);
+            Toast.makeText(getApplicationContext(), "连接超时:" + device.getBleName(), Toast.LENGTH_SHORT).show();
+        }
+    };
+    /**
+     * 通知的回调
+     */
+    private BleNotiftCallback<BleDevice> bleNotiftCallback = new BleNotiftCallback<BleDevice>() {
+        @Override
+        public void onChanged(BleDevice device, BluetoothGattCharacteristic characteristic) {
+            UUID uuid = characteristic.getUuid();
+            if (device.isConnectting()) {
+                Toast.makeText(getApplicationContext(), "连接成功", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getApplicationContext(), "连接断开", Toast.LENGTH_SHORT).show();
+            }
+            Log.e(TAG, "onChanged==uuid:" + uuid.toString());
+            Log.e(TAG, "onChanged==address:" + device.getBleAddress());
+        }
+
+        /**
+         *  Set the notification here when the service finds a callback       setNotify
+         * @param gatt
+         */
+        @Override
+        public void onNotifySuccess(BluetoothGatt gatt) {
+            super.onNotifySuccess(gatt);
+            onResume();//
+            Log.e(TAG,"2be successful and can send data");
+        }
+    };
+
+    /**
+     * 旋转后重写
+     *
+     * @param newConfig
+     */
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -121,7 +294,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 startActivity(new Intent(MainActivity.this, DeviceManage.class));
             }
         });
-
     }
 
     protected String setSendCmd() {
@@ -175,20 +347,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         angleLongPress = false;
         if (!DeviceManage.isConnect) {
             tvState.setText("未连接");
-            Log.e("onResume", "setText(\"未连接\")");
+            Log.e(TAG, "onResume：setText(\"未连接\")");
         } else if (isFirstOpen) {
             showSnackBar(ibdown, "蓝牙已连接,进入遥控模式");
             tvState.setText("已连接");
             isFirstOpen = false;
             sendFlag = "0";
-            new Thread() {
-                @Override
-                public void run() {
-                    super.run();
-                    connectServerWithTCPSoc();
-                }
-            }.start();
-            Log.e("onResume", "setText(\"已连接\")");
+            new DeviceManage().sendCmd(setSendCmd());
+            Log.e(TAG, "onResume：setText(\"已连接\")");
         }
     }
 
@@ -204,9 +370,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onDestroy();
         sendLongPress = false;
         angleLongPress = false;
+//        SharedPreferences settings = getSharedPreferences("DeviceAddress", MODE_PRIVATE);
+////            if(settings.edit()!=null){
+////                settings.edit().clear();
+////            }
+//        if (mBle.getConnetedDevices().size() != 0) {
+//            settings.edit().putString("DeviceAddress", mBle.getConnetedDevices().get(0).getBleAddress()).apply();
+//            Log.e(TAG, "onDestroy " + mBle.getConnetedDevices().get(0).getBleAddress());
+//        }
         if (DeviceManage.mBle != null) {
             DeviceManage.mBle.destory(getApplicationContext());
-            Log.e(TAG, "destory");
+            Log.e(TAG, "MainActivity onDestroy");
         }
     }
 
@@ -229,7 +403,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.imageButton_ok:
                 if (choiceComOption == 0 && !DeviceManage.isConnect) {
-                    Toast.makeText(getApplicationContext(), "蓝牙未连接", Toast.LENGTH_SHORT).show();
+                    showSnackBar(tvSignal, "蓝牙未连接");
                     break;
                 }
                 sendFlag = "3";
@@ -261,8 +435,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 if (socketclient != null) {
                                     socketclient.close();
                                 }
+                                if (DeviceManage.mBle != null) {
+                                    DeviceManage.mBle.destory(getApplicationContext());
+                                    Log.e(TAG, "MainActivity mBle onDestroy");
+                                }
                                 socketclient = new Socket("10.151.232.250", 8989);
                                 handler.sendEmptyMessage(101);
+                                sendFlag = "0";
+                                connectServerWithTCPSoc();
                             } catch (IOException e) {
                                 handler.sendEmptyMessage(102);
                                 showSnackBar(tvSignal, e.toString());
@@ -282,8 +462,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 if (socketclient != null) {
                                     socketclient.close();
                                 }
+                                if (DeviceManage.mBle != null) {
+                                    DeviceManage.mBle.destory(getApplicationContext());
+                                    Log.e(TAG, "MainActivity mBle onDestroy");
+                                }
                                 socketclient = new Socket("10.151.232.250", 8989);
                                 handler.sendEmptyMessage(101);
+                                sendFlag = "0";
+                                connectServerWithTCPSoc();
                             } catch (IOException e) {
                                 handler.sendEmptyMessage(102);
                                 showSnackBar(tvSignal, e.toString());
@@ -294,11 +480,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } else if (choiceComOption == 2) {
                     choiceComOption = 0;
                     tvSignal.setText("BT");
-                    if (DeviceManage.isConnect) {
-                        tvState.setText("已连接");
-                    } else {
-                        tvState.setText("未连接");
-                    }
+                    reConnect();
+//                    if (DeviceManage.isConnect) {
+//                        tvState.setText("已连接");
+//                    } else {
+//                        tvState.setText("未连接");
+//                    }
                     try {
                         if (socketclient != null) {
                             socketclient.close();
